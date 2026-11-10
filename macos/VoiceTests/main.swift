@@ -85,8 +85,15 @@ check("Command+I і Command+V не перехоплюються", swallowsHotkey
 check("відпускання D не перехоплюється", swallowsHotkey(KeyPress(keyCode: 0x02, command: true, keyDown: false, repeated: false)) == false)
 
 let paste = cursorPastePlan()
-check("вставка фокусує чат і вставляє з буфера", paste == [PasteKey(keyCode: 0x22, command: true), PasteKey(keyCode: 0x09, command: true)])
-check("вставка не натискає Enter", paste.allSatisfy { $0.keyCode != 0x24 && $0.keyCode != 0x4C })
+check(
+    "вставка фокусує чат, вставляє з буфера і відправляє Enter",
+    paste == [
+        PasteKey(keyCode: 0x22, command: true),
+        PasteKey(keyCode: 0x09, command: true),
+        PasteKey(keyCode: 0x24, command: false),
+    ]
+)
+check("відправлення не тримає Command", paste.last?.command == false)
 
 let arguments = whisperArguments(model: "models/ggml-small.bin", audio: "recordings/a.wav")
 check("розпізнавання примусово українською", arguments.contains("-l") && arguments[arguments.firstIndex(of: "-l")! + 1] == "uk")

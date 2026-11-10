@@ -351,18 +351,25 @@ final class AppController: NSObject, NSApplicationDelegate {
 
     private func insertIntoCursor() {
         setStatus("Вставляю…")
-        let steps = cursorPastePlan()
         whenCursorIsFront { [weak self] in
-            guard let self else { return }
-            self.postCommand(CGKeyCode(steps[0].keyCode))
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-                self.postCommand(CGKeyCode(steps[1].keyCode))
-                self.setStatus("У чаті")
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                    guard self.phase == .idle else { return }
-                    self.setStatus(voiceIdleStatus)
-                }
+            self?.postPaste(cursorPastePlan(), index: 0)
+        }
+    }
+
+    private func postPaste(_ steps: [PasteKey], index: Int) {
+        guard index < steps.count else {
+            setStatus("У чаті")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+                guard let self, self.phase == .idle else { return }
+                self.setStatus(voiceIdleStatus)
             }
+            return
+        }
+        let step = steps[index]
+        postKey(CGKeyCode(step.keyCode), command: step.command)
+        let delay = index == 0 ? 0.55 : 0.2
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            self?.postPaste(steps, index: index + 1)
         }
     }
 
@@ -384,13 +391,15 @@ final class AppController: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func postCommand(_ keyCode: CGKeyCode) {
+    private func postKey(_ keyCode: CGKeyCode, command: Bool) {
         let source = CGEventSource(stateID: .hidSystemState)
         source?.localEventsSuppressionInterval = 0
         let down = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true)
         let up = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false)
-        down?.flags = .maskCommand
-        up?.flags = .maskCommand
+        if command {
+            down?.flags = .maskCommand
+            up?.flags = .maskCommand
+        }
         down?.post(tap: .cghidEventTap)
         up?.post(tap: .cghidEventTap)
     }

@@ -121,6 +121,7 @@ func cursorPastePlan() -> [PasteKey] {
     [
         PasteKey(keyCode: 0x22, command: true),
         PasteKey(keyCode: 0x09, command: true),
+        PasteKey(keyCode: 0x24, command: false),
     ]
 }
 
